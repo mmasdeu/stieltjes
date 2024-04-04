@@ -18,7 +18,7 @@ structure MyInterval where
 #check MyInterval
 #check MyInterval.mk 2 3 (by linarith)
 
-attribute [simp] MyInterval.lower_lt_upper
+-- attribute [simp] MyInterval.lower_lt_upper
 
 namespace MyInterval
 
@@ -43,7 +43,7 @@ theorem eq_iff' (I J : MyInterval) (h : ∀ x, x ∈ I ↔ x ∈ J) : I = J:= by
   done
 
 instance : LE (MyInterval) :=
-  ⟨fun I J ↦ ∀ ⦃x⦄, x ∈ I → x ∈ J⟩
+  ⟨fun I J ↦ ∀ {x}, x ∈ I → x ∈ J⟩
 
 @[simp]
 theorem le_def : I ≤ J ↔ ∀ x ∈ I, x ∈ J := Iff.rfl
@@ -119,17 +119,19 @@ instance : OrderTop (Prepartition I) where
     · simp
       constructor
       done
-    · apply Prepartition.le_of_mem' P J hJ
+    · sorry
       done
 
 
 structure TaggedPrepartition (I : MyInterval) extends Prepartition I where
   tag : MyInterval → ℝ
-  tag_mem_Icc : ∀ J, tag J ∈ I.Closure
+  tag_mem_Icc : ∀ J, tag J ∈ J.Closure
+
+def TaggedPrepartition.isPartition (P : TaggedPrepartition I) := P.toPrepartition.isPartition
 
 def Darboux (f : ℝ → ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) :=
   ∑ I in P.intervals, f (P.tag I) * (I.upper - I.lower)
 
-theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) :
+theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) (h : P.isPartition) :
   Darboux (λ x : ℝ ↦ c) α P = c * (α I.upper - α I.lower) := by
   sorry
