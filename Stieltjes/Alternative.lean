@@ -33,7 +33,7 @@ theorem upper_mem (I : MyInterval) : I.upper ∈ I := by
   rw[mem_def, @Set.right_mem_Ioc]
   exact I.lower_lt_upper
 
-theorem le_lower_non_mem (I : MyInterval) (x:ℝ) (h:x ≤ I.lower):
+theorem le_lower_non_mem (I : MyInterval) (x:ℝ) (h: x ≤ I.lower):
 x ∉ I := by
   intro H
   rw [mem_def] at H
@@ -104,9 +104,17 @@ theorem injective_intervals : Function.Injective (intervals : Prepartition I →
   rintro ⟨s₁, h₁, h₁'⟩ ⟨s₂, h₂, h₂'⟩ (rfl : s₁ = s₂)
   rfl
 
-theorem lower_lt_upper (P : Prepartition I) (J: MyInterval)(h : J ∈ P.intervals): J.lower < I.upper := by
+theorem lower_lt_upper_I {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : J.lower < I.upper := by
   have := ((MyInterval.le_extr J I).mp (P.le_of_mem' J h)).1
   exact gt_of_ge_of_gt this (J.lower_lt_upper)
+
+theorem lower_I_le_lower {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : I.lower ≤ J.lower := by
+  apply ((MyInterval.le_extr _ _).mp _).2; exact P.le_of_mem' J h
+
+theorem lower_I_lt_upper {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : I.lower < J.upper := by
+  calc
+  I.lower ≤ J.lower := lower_I_le_lower h
+  _ < J.upper := by exact J.lower_lt_upper
 
 section
 
@@ -150,7 +158,6 @@ theorem eq_if_lower_lt_upper (h1: J1.lower < J2.upper)
   · have ex : J2.upper ∈ J1 :=
       (MyInterval.mem_def J1 J2.upper).mp ⟨ h1, le_of_lt h ⟩
     exact (eq_if_common_point hJ2 hJ1 (MyInterval.upper_mem J2) ex).symm
-
 
 theorem lower_eq_upper_if_lower_in (hl : J1.lower ∈ J2):
 J1.lower = J2.upper := by
@@ -225,14 +232,13 @@ instance : OrderTop (Prepartition I) where
     · exact Finset.singleton_subset_iff.mp fun ⦃I⦄ I => I
     · exact P.le_of_mem' J hJ
 
-theorem lower_in (P : Prepartition I)(J: MyInterval)(h: J ∈ P)
-(hN: I.lower< J.lower):
-    J.lower ∈ I  := by
+theorem lower_in {P : Prepartition I} {J: MyInterval} (h: J ∈ P)
+  (hN: I.lower < J.lower) :  J.lower ∈ I  := by
   have aux1 : J ≤ I:= P.le_of_mem' J h
   have aux2 : J.upper ≤ I.upper := ((MyInterval.le_extr J I).mp aux1).1
   have aux3 : J.lower < I.upper := by exact gt_of_ge_of_gt aux2 (J.lower_lt_upper)
   rw [MyInterval.mem_def]
-  exact ⟨ hN , le_of_lt aux3⟩
+  exact ⟨hN, le_of_lt aux3⟩
 
 
 structure TaggedPrepartition (I : MyInterval) extends Prepartition I where
@@ -251,16 +257,15 @@ theorem upperset_nonempty (P : Prepartition I)(h : P.isPartition): (upperset P).
   use J
   exact hJ
 
-theorem upperset_mem (P : Prepartition I) (x:ℝ)(h:x∈ (upperset P)): ∃ J ∈ P, J.upper=x :=
-  Finset.mem_image.mp h
+theorem upperset_mem (P : Prepartition I) (x:ℝ) : x ∈ upperset P ↔ ∃ J ∈ P, J.upper = x := by
+  exact Finset.mem_image
 
-theorem upperset_mem_of_mem (P : Prepartition I) (J:MyInterval)(h:J∈ P): J.upper ∈ P.upperset:=
+theorem upperset_mem_of_mem (P : Prepartition I) (J:MyInterval) (h:J∈ P): J.upper ∈ P.upperset:=
   Finset.mem_image_of_mem _ h
 
-theorem upper_lower (P : Prepartition I) (J: MyInterval)
-(hJ: J ∈ P)(hN: J.upper< I.upper)(h : P.isPartition):
-    ∃ JJ ∈ P.intervals, J.upper = JJ.lower := sorry
-
+theorem upper_lower {P : Prepartition I} {J: MyInterval}
+(hJ: J ∈ P) (hN: J.upper ≠ I.upper) (h : P.isPartition):
+    ∃ J' ∈ P.intervals, J'.lower =  J.upper := sorry
 
 def lowerset (P : Prepartition I): Finset ℝ  :=
   Finset.image (λ J ↦ J.lower) P.intervals
@@ -272,41 +277,42 @@ theorem lowerset_nonempty (P : Prepartition I)(h : P.isPartition): (lowerset P).
   use J
   exact hJ
 
-theorem lowerset_mem (P : Prepartition I) (x : ℝ) (h : x ∈ (lowerset P)) : ∃ J ∈ P, J.lower = x :=
-  Finset.mem_image.mp h
+theorem lowerset_mem (P : Prepartition I) (x : ℝ) : x ∈ lowerset P ↔ ∃ J ∈ P, J.lower = x := by
+  exact Finset.mem_image
 
 theorem lowerset_mem_of_mem (P : Prepartition I) (J:MyInterval) (h : J ∈ P) : J.lower ∈ P.lowerset:=
   Finset.mem_image_of_mem _ h
 
-theorem lower_upper (P : Prepartition I)(J: MyInterval)(hJ: J ∈ P)(hN: I.lower< J.lower)(h : P.isPartition):
-    ∃ JJ ∈ P.intervals, J.lower = JJ.upper := by
-  have hI : J.lower ∈ I  := lower_in P J hJ hN
+theorem lower_upper {P : Prepartition I} {J: MyInterval} (hJ: J ∈ P) (hN: I.lower < J.lower) (h : P.isPartition):
+    ∃ JJ ∈ P.intervals, JJ.upper = J.lower := by
+  have hI : J.lower ∈ I  := lower_in hJ hN
   let ⟨JJ, hJJ1, hJJ2⟩ := h (J.lower : ℝ) hI
   use JJ
-  exact ⟨hJJ1, lower_eq_upper_if_lower_in hJ hJJ1 hJJ2⟩
+  exact ⟨hJJ1, by exact (lower_eq_upper_if_lower_in hJ hJJ1 hJJ2).symm⟩
 
-theorem lower_I (P : Prepartition I)(h : P.isPartition):
-    ∃ J ∈ P, I.lower = J.lower := by
+theorem lower_I {P : Prepartition I} (h : P.isPartition):
+    ∃ J ∈ P, J.lower = I.lower := by
   by_contra H
-  have HH :∀ J∈ P, I.lower< J.lower := by
+  have HH :∀ J ∈ P, I.lower < J.lower := by
     intro J hJ
     have h1 := ((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ)).2
-    have h2: I.lower ≠ J.lower := not_and.mp (not_exists.mp H J) hJ
-    exact lt_of_le_of_ne h1 h2
+    have h2: J.lower ≠ I.lower := not_and.mp (not_exists.mp H J) hJ
+    exact lt_of_le_of_ne h1 (id (Ne.symm h2))
   let l:=P.lowerset.min' (lowerset_nonempty P h)
-  have ex:∃ J ∈ P, J.lower = l := by
+  have ex : ∃ J ∈ P, J.lower = l := by
     have :=  Finset.min'_mem (P.lowerset) (lowerset_nonempty P h)
-    exact lowerset_mem P l this
+    simp [lowerset_mem] at this
+    exact this
   have fo: ∀ J∈ P, l≤ J.lower:= by
     intro J hJ
     exact Finset.min'_le P.lowerset J.lower (lowerset_mem_of_mem P J hJ)
   have ne: ∀ J∈ P, l∉ J := fun J a => MyInterval.le_lower_non_mem J l (fo J a)
-  have HHH : ∀ J∈ P.intervals,  ∃ JJ ∈ P.intervals, J.lower = JJ.upper :=
-    fun J a => lower_upper P J a (HH J a) h
+  have HHH : ∀ J∈ P.intervals,  ∃ JJ ∈ P.intervals, JJ.upper = J.lower :=
+    fun J a => lower_upper a (HH J a) h
   have HHHH : ∀ J∈ P.intervals, J.lower ∈ I:= by
     intro J hJ
     let ⟨JJ,hJJ1,hJJ2⟩ :=HHH J hJ
-    rw [hJJ2]
+    rw [←hJJ2]
     exact (le_of_mem' P JJ hJJ1 ) ( MyInterval.upper_mem JJ)
   have linI : l∈ I:= by
     let ⟨lJ,hlJ1,hlJ2⟩:= ex
@@ -317,6 +323,10 @@ theorem lower_I (P : Prepartition I)(h : P.isPartition):
     simp_rw [not_and] at this
     exact this
   exact this ne
+
+
+theorem upper_I {P : Prepartition I} (h : P.isPartition):
+    ∃ J ∈ P, J.upper = I.upper := by sorry
 
 -- def lower_list (P : Prepartition I):  List ℝ := (P.lowerset.sort (·≤·)) ++ [I.upper]
 
@@ -331,9 +341,63 @@ theorem lower_I (P : Prepartition I)(h : P.isPartition):
 def Darboux (f : ℝ → ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) :=
   ∑ J in P.intervals, f (P.tag J) * (α J.upper - α J.lower)
 
-lemma aux1 {P : Prepartition I} (h : P.isPartition) : (P.upperset) \ (P.lowerset)= ({I.upper} : Finset ℝ) := by sorry
+lemma aux1 {P : Prepartition I} (h : P.isPartition) :
+  (P.upperset) \ (P.lowerset) = ({I.upper} : Finset ℝ) := by
+  ext x
+  constructor
+  · simp
+    intro hu hl
+    unfold upperset at hu
+    simp at hu
+    obtain ⟨J,⟨hJ, hJ'⟩⟩ := hu
+    subst hJ'
+    by_contra hkey
+    apply hl
+    rw [lowerset_mem]
+    exact upper_lower hJ hkey h
+  · simp
+    intro hx
+    subst hx
+    constructor
+    · unfold upperset
+      simp
+      apply upper_I h
+    · unfold lowerset
+      simp
+      intro J hJ
+      suffices : J.lower < I.upper
+      · linarith
+      exact lower_lt_upper_I hJ
 
-lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset)= ({I.lower} : Finset ℝ) := by sorry
+lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset) = ({I.lower} : Finset ℝ) := by
+  ext x
+  constructor
+  · simp
+    intro hl hu
+    unfold lowerset at hl
+    simp at hl
+    obtain ⟨J,⟨hJ, hJ'⟩⟩ := hl
+    subst hJ'
+    by_contra hkey
+    apply hu
+    rw [upperset_mem]
+    apply lower_upper hJ _ h
+    suffices : I.lower ≤ J.lower
+    · exact lt_of_le_of_ne' this hkey
+    exact lower_I_le_lower hJ
+  · simp
+    intro hx
+    subst hx
+    constructor
+    · unfold lowerset
+      simp
+      apply lower_I h
+    · unfold upperset
+      simp
+      intro J hJ
+      suffices : I.lower < J.upper
+      · linarith
+      exact lower_I_lt_upper hJ
 
 lemma telescope (X Y : Finset ℝ) (f : ℝ → ℝ) :
 ∑ x in X, f x - ∑ x in Y, f x
@@ -356,7 +420,7 @@ lemma key' {P : Prepartition I} (f : ℝ → ℝ):
   done
 
 theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) (h : P.isPartition) :
-  Darboux (λ x : ℝ ↦ c) α P = c * (α I.upper - α I.lower) := by
+  Darboux (λ _ : ℝ ↦ c) α P = c * (α I.upper - α I.lower) := by
   unfold Darboux
   simp
   calc
@@ -366,4 +430,3 @@ theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) (h
   _ = ∑ u in (P.upperset \ P.lowerset), c * α u - ∑ l in (P.lowerset \ P.upperset), c * α l := telescope _ _ _
   _ = ∑ u in {I.upper}, c * α u - ∑ l in {I.lower}, c * α l := by rw [aux1 h, aux2 h]
   _ = c * (α I.upper - α I.lower) := by {simp; ring}
-
