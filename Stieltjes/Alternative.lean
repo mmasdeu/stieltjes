@@ -405,7 +405,12 @@ lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset
 
 lemma telescope (X Y : Finset ℝ) (f : ℝ → ℝ) :
 ∑ x in X, f x - ∑ x in Y, f x
-= ∑ x in (X \ Y), f x - ∑ x in (Y \ X), f x := by sorry
+= ∑ x in (X \ Y), f x - ∑ x in (Y \ X), f x := by 
+  rw [sub_eq_sub_iff_add_eq_add]
+  have h1:= @Finset.disjoint_sdiff _ _ X Y  
+  have h2:= @Finset.disjoint_sdiff _ _ Y X  
+  rw [(Finset.sum_union h1).symm,add_comm,(Finset.sum_union h2).symm]
+  simp_rw [Finset.union_sdiff_symm]
 
 lemma key {P : Prepartition I} (f : ℝ → ℝ):
 ∑ x in P.intervals, f x.upper = ∑ u in P.upperset, f u := by
