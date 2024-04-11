@@ -326,7 +326,11 @@ theorem lower_I {P : Prepartition I} (h : P.isPartition):
 
 
 theorem upper_I {P : Prepartition I} (h : P.isPartition):
-    ∃ J ∈ P, J.upper = I.upper := by sorry
+    ∃ J ∈ P, J.upper = I.upper := by 
+  let ⟨ J, hJ1, hJ2⟩ := h I.upper I.upper_mem
+  have l2 := ((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ1)).1 
+  use J
+  exact ⟨hJ1, le_antisymm l2 (hJ2.2) ⟩ 
 
 -- def lower_list (P : Prepartition I):  List ℝ := (P.lowerset.sort (·≤·)) ++ [I.upper]
 
