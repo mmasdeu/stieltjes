@@ -263,9 +263,12 @@ theorem upperset_mem (P : Prepartition I) (x:ℝ) : x ∈ upperset P ↔ ∃ J �
 theorem upperset_mem_of_mem (P : Prepartition I) (J:MyInterval) (h:J∈ P): J.upper ∈ P.upperset:=
   Finset.mem_image_of_mem _ h
 
-theorem upper_lower {P : Prepartition I} {J: MyInterval}
-(hJ: J ∈ P) (hN: J.upper ≠ I.upper) (h : P.isPartition):
-    ∃ J' ∈ P.intervals, J'.lower =  J.upper := sorry
+theorem upper_I {P : Prepartition I} (h : P.isPartition):
+    ∃ J ∈ P, J.upper = I.upper := by 
+  let ⟨ J, hJ1, hJ2⟩ := h I.upper I.upper_mem
+  have l2 := ((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ1)).1 
+  use J
+  exact ⟨hJ1, le_antisymm l2 (hJ2.2) ⟩ 
 
 def lowerset (P : Prepartition I): Finset ℝ  :=
   Finset.image (λ J ↦ J.lower) P.intervals
@@ -289,6 +292,49 @@ theorem lower_upper {P : Prepartition I} {J: MyInterval} (hJ: J ∈ P) (hN: I.lo
   let ⟨JJ, hJJ1, hJJ2⟩ := h (J.lower : ℝ) hI
   use JJ
   exact ⟨hJJ1, by exact (lower_eq_upper_if_lower_in hJ hJJ1 hJJ2).symm⟩
+
+theorem upper_lower {P : Prepartition I} {J: MyInterval}
+(hJ: J ∈ P) (hN: J.upper ≠ I.upper) (h : P.isPartition):
+    ∃ J' ∈ P.intervals, J'.lower =  J.upper := by
+  let S := Finset.filter (J.upper < ·) P.upperset
+  have NeS : S.Nonempty := by 
+    rw [Finset.nonempty_coe_sort.symm]
+    simp
+    use I.upper
+    rw [@Finset.mem_filter]
+    constructor
+    · exact (upperset_mem P I.upper).mpr (upper_I h)
+    · have : J.upper≤ I.upper :=((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ)).1
+      exact lt_of_le_of_ne this hN
+  let m := Finset.min' S NeS
+  have minS : m ∈ S :=  Finset.min'_mem S NeS
+  have minP : m ∈ P.upperset := Finset.mem_of_mem_filter m minS
+  let ⟨J',hJ1,hJ2⟩:= (upperset_mem P m).mp minP
+  have JleJ' : J.upper < J'.upper:= hJ2 ▸ (Finset.mem_filter.mp minS).2
+  have HltJ': J.lower < J'.upper := lt_trans J.lower_lt_upper JleJ'
+  use J'
+  constructor
+  · exact hJ1
+  · have gee : J'.lower ≥  J.upper := by 
+      by_contra H
+      have JeJ':= eq_if_lower_lt_upper hJ hJ1 HltJ' (lt_of_not_ge H)
+      have: J.upper = J'.upper := congrArg MyInterval.upper JeJ'
+      rw [this] at JleJ'
+      exact (lt_self_iff_false J'.upper).mp JleJ'
+    have lee : J'.lower ≤ J.upper := by 
+      have hh : I.lower < J'.lower := by 
+        have t1 : I.lower < J.upper := by 
+          have := ((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ)).2
+          exact lt_of_le_of_lt this J.lower_lt_upper 
+        exact lt_of_lt_of_le t1 gee 
+      let ⟨ Ju,hJu1,hJu2⟩:= lower_upper hJ1 hh h 
+      have : Ju.upper < m:=  hJ2 ▸ hJu2 ▸ J'.lower_lt_upper
+      rw [hJu2.symm] 
+      have hu: Ju.upper ∈ P.upperset  := upperset_mem_of_mem P Ju hJu1  
+      rw [@Finset.lt_min'_iff] at this 
+      by_contra Hn
+      exact (lt_self_iff_false Ju.upper).mp (this Ju.upper (Finset.mem_filter.mpr ⟨hu, not_le.mp Hn⟩))
+    exact le_antisymm lee gee
 
 theorem lower_I {P : Prepartition I} (h : P.isPartition):
     ∃ J ∈ P, J.lower = I.lower := by
@@ -324,13 +370,6 @@ theorem lower_I {P : Prepartition I} (h : P.isPartition):
     exact this
   exact this ne
 
-
-theorem upper_I {P : Prepartition I} (h : P.isPartition):
-    ∃ J ∈ P, J.upper = I.upper := by 
-  let ⟨ J, hJ1, hJ2⟩ := h I.upper I.upper_mem
-  have l2 := ((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ1)).1 
-  use J
-  exact ⟨hJ1, le_antisymm l2 (hJ2.2) ⟩ 
 
 -- def lower_list (P : Prepartition I):  List ℝ := (P.lowerset.sort (·≤·)) ++ [I.upper]
 
