@@ -47,8 +47,6 @@ x ∉ I := by
 
 instance CoeSet : Coe (MyInterval) (Set ℝ) := ⟨λ I ↦ {x | x ∈ I}⟩
 
---theorem eq_iff (I J : MyInterval) : I = J ↔ (I : Set ℝ) = J := by sorry
-
 instance : LE (MyInterval) :=
   ⟨fun I J ↦ ∀ {x}, x ∈ I → x ∈ J⟩
 
@@ -94,7 +92,6 @@ structure Prepartition (I : MyInterval) where
 
 namespace Prepartition
 
-
 variable {I : MyInterval}
 
 instance : Membership MyInterval (Prepartition I):=
@@ -104,17 +101,11 @@ theorem injective_intervals : Function.Injective (intervals : Prepartition I →
   rintro ⟨s₁, h₁, h₁'⟩ ⟨s₂, h₂, h₂'⟩ (rfl : s₁ = s₂)
   rfl
 
-theorem lower_lt_upper_I {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : J.lower < I.upper := by
-  have := ((MyInterval.le_extr J I).mp (P.le_of_mem' J h)).1
-  exact gt_of_ge_of_gt this (J.lower_lt_upper)
+theorem upper_le_upper_I {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : J.upper ≤  I.upper := 
+  ((MyInterval.le_extr J I).mp (P.le_of_mem' J h)).1
 
 theorem lower_I_le_lower {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : I.lower ≤ J.lower := by
   apply ((MyInterval.le_extr _ _).mp _).2; exact P.le_of_mem' J h
-
-theorem lower_I_lt_upper {P : Prepartition I} {J: MyInterval} (h : J ∈ P.intervals) : I.lower < J.upper := by
-  calc
-  I.lower ≤ J.lower := lower_I_le_lower h
-  _ < J.upper := by exact J.lower_lt_upper
 
 section
 
@@ -234,11 +225,9 @@ instance : OrderTop (Prepartition I) where
 
 theorem lower_in {P : Prepartition I} {J: MyInterval} (h: J ∈ P)
   (hN: I.lower < J.lower) :  J.lower ∈ I  := by
-  have aux1 : J ≤ I:= P.le_of_mem' J h
-  have aux2 : J.upper ≤ I.upper := ((MyInterval.le_extr J I).mp aux1).1
-  have aux3 : J.lower < I.upper := by exact gt_of_ge_of_gt aux2 (J.lower_lt_upper)
+  have aux : J.lower < I.upper := by exact gt_of_ge_of_gt ( upper_le_upper_I h) (J.lower_lt_upper)
   rw [MyInterval.mem_def]
-  exact ⟨hN, le_of_lt aux3⟩
+  exact ⟨hN, le_of_lt aux⟩
 
 
 structure TaggedPrepartition (I : MyInterval) extends Prepartition I where
@@ -302,10 +291,7 @@ theorem upper_lower {P : Prepartition I} {J: MyInterval}
     simp
     use I.upper
     rw [@Finset.mem_filter]
-    constructor
-    · exact (upperset_mem P I.upper).mpr (upper_I h)
-    · have : J.upper≤ I.upper :=((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ)).1
-      exact lt_of_le_of_ne this hN
+    exact ⟨(upperset_mem P I.upper).mpr (upper_I h), lt_of_le_of_ne (upper_le_upper_I hJ) hN ⟩ 
   let m := Finset.min' S NeS
   have minS : m ∈ S :=  Finset.min'_mem S NeS
   have minP : m ∈ P.upperset := Finset.mem_of_mem_filter m minS
@@ -341,9 +327,8 @@ theorem lower_I {P : Prepartition I} (h : P.isPartition):
   by_contra H
   have HH :∀ J ∈ P, I.lower < J.lower := by
     intro J hJ
-    have h1 := ((MyInterval.le_extr J I).mp (P.le_of_mem' J hJ)).2
     have h2: J.lower ≠ I.lower := not_and.mp (not_exists.mp H J) hJ
-    exact lt_of_le_of_ne h1 (id (Ne.symm h2))
+    exact lt_of_le_of_ne (lower_I_le_lower hJ ) (id (Ne.symm h2))
   let l:=P.lowerset.min' (lowerset_nonempty P h)
   have ex : ∃ J ∈ P, J.lower = l := by
     have :=  Finset.min'_mem (P.lowerset) (lowerset_nonempty P h)
@@ -370,17 +355,6 @@ theorem lower_I {P : Prepartition I} (h : P.isPartition):
     exact this
   exact this ne
 
-
--- def lower_list (P : Prepartition I):  List ℝ := (P.lowerset.sort (·≤·)) ++ [I.upper]
-
--- theorem lower_list_sorted (P : Prepartition I): P.lower_list.Sorted (·<·):= by sorry
-
--- def upper_list (P : Prepartition I):  List ℝ := I.lower :: P.upperset.sort (·≤·)
-
--- theorem lower_list_eq_upper_list (P : Prepartition I): P.lower_list=P.upper_list := by sorry
-
-
---
 def Darboux (f : ℝ → ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) :=
   ∑ J in P.intervals, f (P.tag J) * (α J.upper - α J.lower)
 
@@ -410,7 +384,7 @@ lemma aux1 {P : Prepartition I} (h : P.isPartition) :
       intro J hJ
       suffices : J.lower < I.upper
       · linarith
-      exact lower_lt_upper_I hJ
+      linarith [upper_le_upper_I hJ, J.lower_lt_upper] 
 
 lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset) = ({I.lower} : Finset ℝ) := by
   ext x
@@ -440,7 +414,7 @@ lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset
       intro J hJ
       suffices : I.lower < J.upper
       · linarith
-      exact lower_I_lt_upper hJ
+      linarith [lower_I_le_lower hJ, J.lower_lt_upper] 
 
 lemma telescope (X Y : Finset ℝ) (f : ℝ → ℝ) :
 ∑ x in X, f x - ∑ x in Y, f x
