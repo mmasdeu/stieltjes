@@ -275,8 +275,8 @@ theorem lowerset_mem (P : Prepartition I) (x : ℝ) : x ∈ lowerset P ↔ ∃ J
 theorem lowerset_mem_of_mem (P : Prepartition I) (J:MyInterval) (h : J ∈ P) : J.lower ∈ P.lowerset:=
   Finset.mem_image_of_mem _ h
 
-theorem lower_upper {P : Prepartition I} {J: MyInterval} (hJ: J ∈ P) (hN: I.lower < J.lower) (h : P.isPartition):
-    ∃ JJ ∈ P.intervals, JJ.upper = J.lower := by
+theorem lower_upper {P : Prepartition I} {J: MyInterval} (hJ: J ∈ P)
+    (hN: I.lower < J.lower) (h : P.isPartition) : ∃ JJ ∈ P.intervals, JJ.upper = J.lower := by
   have hI : J.lower ∈ I  := lower_in hJ hN
   let ⟨JJ, hJJ1, hJJ2⟩ := h (J.lower : ℝ) hI
   use JJ
@@ -358,14 +358,13 @@ theorem lower_I {P : Prepartition I} (h : P.isPartition):
 def Darboux (f : ℝ → ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) :=
   ∑ J in P.intervals, f (P.tag J) * (α J.upper - α J.lower)
 
-lemma aux1 {P : Prepartition I} (h : P.isPartition) :
+lemma upper_minus_lower {P : Prepartition I} (h : P.isPartition) :
   (P.upperset) \ (P.lowerset) = ({I.upper} : Finset ℝ) := by
   ext x
   constructor
   · simp
     intro hu hl
-    unfold upperset at hu
-    simp at hu
+    rw [upperset_mem] at hu 
     obtain ⟨J,⟨hJ, hJ'⟩⟩ := hu
     subst hJ'
     by_contra hkey
@@ -376,23 +375,22 @@ lemma aux1 {P : Prepartition I} (h : P.isPartition) :
     intro hx
     subst hx
     constructor
-    · unfold upperset
-      simp
+    · rw [upperset_mem]
       apply upper_I h
-    · unfold lowerset
-      simp
+    · rw [lowerset_mem]
+      simp 
       intro J hJ
       suffices : J.lower < I.upper
       · linarith
       linarith [upper_le_upper_I hJ, J.lower_lt_upper] 
 
-lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset) = ({I.lower} : Finset ℝ) := by
+lemma lower_minus_upper {P : Prepartition I} (h : P.isPartition) : 
+    (P.lowerset) \ (P.upperset) = ({I.lower} : Finset ℝ) := by
   ext x
   constructor
   · simp
     intro hl hu
-    unfold lowerset at hl
-    simp at hl
+    rw [lowerset_mem] at hl
     obtain ⟨J,⟨hJ, hJ'⟩⟩ := hl
     subst hJ'
     by_contra hkey
@@ -406,11 +404,10 @@ lemma aux2 {P : Prepartition I} (h : P.isPartition) : (P.lowerset) \ (P.upperset
     intro hx
     subst hx
     constructor
-    · unfold lowerset
-      simp
+    · rw [lowerset_mem]
       apply lower_I h
-    · unfold upperset
-      simp
+    · rw [upperset_mem]
+      simp 
       intro J hJ
       suffices : I.lower < J.upper
       · linarith
@@ -450,5 +447,5 @@ theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : TaggedPrepartition I) (h
   _ =  ∑ x in P.intervals, ((c • α) · ) x.upper - ∑ x in P.intervals, ((c • α) · ) x.lower := by simp
   _ = ∑ u in P.upperset, c * α u - ∑ l in P.lowerset, c * α l := by {rw [key, key']; simp}
   _ = ∑ u in (P.upperset \ P.lowerset), c * α u - ∑ l in (P.lowerset \ P.upperset), c * α l := telescope _ _ _
-  _ = ∑ u in {I.upper}, c * α u - ∑ l in {I.lower}, c * α l := by rw [aux1 h, aux2 h]
+  _ = ∑ u in {I.upper}, c * α u - ∑ l in {I.lower}, c * α l := by rw [upper_minus_lower h, lower_minus_upper h]
   _ = c * (α I.upper - α I.lower) := by {simp; ring}
