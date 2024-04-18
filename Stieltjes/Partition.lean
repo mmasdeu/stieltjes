@@ -33,24 +33,33 @@ theorem lower_I_le_lower {P : Prepartition I} {J: MyInterval} (h : J ∈ P.inter
 
 section
 
-variable {P : Prepartition I} {J1 J2 : MyInterval}
-(hJ1: J1 ∈ P.intervals) (hJ2: J2 ∈ P.intervals)
+variable {P : Prepartition I}
 
-theorem eq_if_common_point {x : ℝ} (hx1 : x ∈ J1) (hx2 : x ∈ J2)
+theorem eq_if_common_point {J1 : MyInterval} (hJ1 : J1 ∈ P.intervals)
+{J2 : MyInterval} (hJ2 : J2 ∈ P.intervals) {x : ℝ} (hx1 : x ∈ J1) (hx2 : x ∈ J2)
 : J1 = J2 := by
   by_contra H
   have ex : x∈ (J1 : Set ℝ)∩J2 := Set.mem_inter hx1 hx2
   rw [ P.pairwiseDisjoint hJ1 hJ2 H ] at ex
   exact ex
 
-theorem eq_if_le (h : J1 ≤ J2) : J1 = J2 := by
+theorem eq_if_eq_upper (J1 : MyInterval) (hJ1 : J1 ∈ P.intervals)
+(J2 : MyInterval) (hJ2 : J2 ∈ P.intervals) (hu : J1.upper = J2.upper) :
+ J1 = J2 := by
+  have hj1 : J1.upper ∈ J1 := by exact MyInterval.upper_mem J1
+  have hj2 : J1.upper ∈ J2 := by {rw [hu]; exact MyInterval.upper_mem J2}
+  apply eq_if_common_point hJ1 hJ2 hj1 hj2
+
+theorem eq_if_le {J1 : MyInterval} (hJ1 : J1 ∈ P.intervals)
+{J2 : MyInterval} (hJ2 : J2 ∈ P.intervals) (h : J1 ≤ J2) : J1 = J2 := by
   by_contra H
   have ex1 : J1.upper ∈ J1 := MyInterval.upper_mem J1
   have ex :  J1.upper ∈ (J1 : Set ℝ) ∩ J2 :=Set.mem_inter ex1 (h ex1)
   rw [ P.pairwiseDisjoint hJ1 hJ2 H ] at ex
   exact ex
 
-theorem eq_if_eq_lower (hl : J1.lower = J2.lower) :
+theorem eq_if_eq_lower (J1 : MyInterval) (hJ1 : J1 ∈ P.intervals)
+(J2 : MyInterval) (hJ2 : J2 ∈ P.intervals) (hl : J1.lower = J2.lower) :
  J1 = J2 := by
   rcases le_or_gt J1.upper J2.upper with h | h
   · have: J1 ≤ J2:= (MyInterval.le_extr J1 J2).mpr ⟨h, le_of_eq hl.symm⟩
@@ -58,11 +67,8 @@ theorem eq_if_eq_lower (hl : J1.lower = J2.lower) :
   · have: J2 ≤ J1:= (MyInterval.le_extr J2 J1).mpr ⟨le_of_lt h, le_of_eq hl⟩
     exact (eq_if_le hJ2 hJ1 this).symm
 
-theorem eq_if_eq_upper (hu : J1.upper = J2.upper) :
- J1 = J2 := by
-  have hj1 : J1.upper ∈ J1 := by exact MyInterval.upper_mem J1
-  have hj2 : J1.upper ∈ J2 := by {rw [hu]; exact MyInterval.upper_mem J2}
-  apply @eq_if_common_point I P _ _ hJ1 hJ2 J1.upper hj1 hj2
+variable {J1 J2 : MyInterval}
+(hJ1: J1 ∈ P.intervals) (hJ2: J2 ∈ P.intervals)
 
 theorem eq_if_lower_lt_upper (h1: J1.lower < J2.upper)
 (h2: J2.lower < J1.upper): J1 = J2 := by
@@ -147,13 +153,18 @@ instance : OrderTop (Prepartition I) where
     · exact Finset.singleton_subset_iff.mp fun ⦃I⦄ I => I
     · exact P.le_of_mem' J hJ
 
+instance Inf : Inf (Prepartition I) where
+  inf := by
+    intro P Q
+    sorry -- To do, this amounts to finding a common refinement of two partitions.
+
 theorem lower_in {P : Prepartition I} {J: MyInterval} (h: J ∈ P)
   (hN: I.lower < J.lower) :  J.lower ∈ I  := by
   have aux : J.lower < I.upper := by exact gt_of_ge_of_gt ( upper_le_upper_I h) (J.lower_lt_upper)
   rw [MyInterval.mem_def]
   exact ⟨hN, le_of_lt aux⟩
 
-
+#check WithBot MyInterval
 def upperset (P : Prepartition I): Finset ℝ  :=
   Finset.image (λ J ↦ J.upper) P.intervals
 

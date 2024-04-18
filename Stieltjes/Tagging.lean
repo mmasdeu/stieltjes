@@ -19,31 +19,33 @@ def Darboux (f : ℝ → ℝ) (α : ℝ → ℝ) (P : Tagging I) :=
 
 def isPartition (P : Tagging I) := P.toPrepartition.isPartition
 
-lemma key {P : Prepartition I} (f : ℝ → ℝ):
+lemma aux1 {P : Prepartition I} (f : ℝ → ℝ):
 ∑ x in P.intervals, f x.upper = ∑ u in P.upperset, f u := by
-  unfold upperset
-  rw [sum_image]
-  exact fun x a y a_1 a_2 ↦ eq_if_eq_upper a a_1 a_2
+  simp [upperset,sum_image eq_if_eq_upper]
 
-lemma key' {P : Prepartition I} (f : ℝ → ℝ):
+lemma aux2 {P : Prepartition I} (f : ℝ → ℝ):
 ∑ x in P.intervals, f x.lower = ∑ l in P.lowerset, f l := by
-  unfold lowerset
-  rw [sum_image]
-  exact fun x a y a_1 a_2 ↦ eq_if_eq_lower a a_1 a_2
+  simp [lowerset, sum_image eq_if_eq_lower]
 
 lemma telescope {X Y : Finset ℝ} {f : ℝ → ℝ} :
 ∑ x in X, f x - ∑ x in Y, f x
 = ∑ x in (X \ Y), f x - ∑ x in (Y \ X), f x := by
-  simp [sub_eq_sub_iff_add_eq_add,←sum_union disjoint_sdiff, add_comm, union_comm]
+  suffices : ∑ x in X, f x +  ∑ x in (Y \ X), f x = ∑ x in (X \ Y), f x + ∑ x in Y, f x
+  · linarith [this]
+  simp [←sum_union disjoint_sdiff, add_comm, union_comm]
 
 theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : Tagging I) (h : P.isPartition) :
   Darboux (λ _ : ℝ ↦ c) α P = c * (α I.upper - α I.lower) := by
   unfold Darboux
   simp
   calc
-  _ = ∑ x in P.intervals, c * α x.upper - ∑ x in P.intervals, c * α x.lower := by {rw [← @Finset.sum_sub_distrib]; congr; ext; ring}
-  _ = ∑ x in P.intervals, ((c • α) · ) x.upper - ∑ x in P.intervals, ((c • α) · ) x.lower := by simp
-  _ = ∑ u in P.upperset, c * α u - ∑ l in P.lowerset, c * α l := by {rw [key, key']; simp}
+  _ = ∑ x in P.intervals, c * α x.upper - ∑ x in P.intervals, c * α x.lower := by
+    {rw [← @Finset.sum_sub_distrib]; congr; ext t; ring}
+  _ = ∑ x in P.intervals, ((c • α) ·  ) x.upper - ∑ x in P.intervals, ((c • α) · ) x.lower := by simp
+  _ = ∑ u in P.upperset, c * α u - ∑ l in P.lowerset, c * α l := by {rw [aux1, aux2]; simp}
   _ = ∑ u in (P.upperset \ P.lowerset), c * α u - ∑ l in (P.lowerset \ P.upperset), c * α l := telescope
   _ = ∑ u in {I.upper}, c * α u - ∑ l in {I.lower}, c * α l := by rw [upper_minus_lower h, lower_minus_upper h]
   _ = c * (α I.upper - α I.lower) := by {simp; ring}
+
+theorem Darboux_const' (c : ℝ) (f : ℝ → ℝ) (P : Tagging I) (h : P.isPartition) :
+  Darboux f (λ _ : ℝ ↦ c) P = 0 := by sorry

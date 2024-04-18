@@ -17,10 +17,7 @@ structure MyInterval where
 
 namespace MyInterval
 
-variable (I J : MyInterval)
-
-instance : Inhabited (MyInterval) :=
-  ⟨⟨0, 1, zero_lt_one⟩⟩
+instance : Inhabited (MyInterval) := ⟨⟨0, 1, zero_lt_one⟩⟩
 
 instance : Membership ℝ (MyInterval) :=
 ⟨fun x I ↦ x ∈ Set.Ioc I.lower I.upper⟩
@@ -28,7 +25,7 @@ instance : Membership ℝ (MyInterval) :=
 theorem mem_def (I : MyInterval) (x : ℝ) : x ∈ I ↔ x ∈ Set.Ioc I.lower I.upper := by rfl
 
 theorem upper_mem (I : MyInterval) : I.upper ∈ I := by
-  rw[mem_def, @Set.right_mem_Ioc]
+  rw [mem_def, @Set.right_mem_Ioc]
   exact I.lower_lt_upper
 
 theorem le_lower_non_mem (I : MyInterval) (x:ℝ) (h: x ≤ I.lower):
@@ -54,7 +51,7 @@ theorem le_def (I J : MyInterval) : I ≤ J ↔ ∀ x ∈ I, x ∈ J := Iff.rfl
 theorem le_extr  (I J : MyInterval) : I ≤ J ↔ I.upper ≤ J.upper ∧ J.lower ≤ I.lower :=
   (Set.Ioc_subset_Ioc_iff (I.lower_lt_upper))
 
-@[ext]
+--@[ext]
 theorem eq_iff' (I J : MyInterval) (h : ∀ x, x ∈ I ↔ x ∈ J) : I = J:= by
   rw [MyInterval.ext_iff I J ]
   have hh1 := (le_extr I J).mp (fun {x} ↦ (h x).mp)
@@ -73,11 +70,46 @@ instance partialOrder : PartialOrder (MyInterval) where
   le_antisymm := by
     intro I J hIJ hJI
     simp at hIJ hJI
-    ext x
+    rw [← eq_iff' I J]
     tauto
+
 
 def Disjoint (I J : MyInterval) : Prop := (I : Set ℝ) ∩ J = ∅
 
+lemma disjoint_symm {I J : MyInterval} :
+  Disjoint I J ↔ Disjoint J I := sorry
+
+lemma disjoint_iff (I J : MyInterval) :
+  I.Disjoint J ↔ min I.upper J.upper ≤ max I.lower J.lower := sorry
+
+lemma disjoint_iff' (I J : MyInterval) :
+  I.Disjoint J ↔ I.upper ≤ J.lower ∨ J.upper ≤ I.lower := sorry
+
 def Closure (I: MyInterval) := Set.Icc I.lower I.upper
+
+def intersection (I J : MyInterval) : MyInterval where
+  lower := ite (Disjoint I J) 0 (max I.lower J.lower)
+  upper := ite (Disjoint I J) 1 (min I.upper J.upper)
+  lower_lt_upper := by
+    have h1 := I.lower_lt_upper
+    have h2 := J.lower_lt_upper
+    simp [h1, h2]
+    by_cases h : Disjoint I J
+    · simp [h]
+    · simp [h, h1, h2]
+      simp [disjoint_iff'] at h
+      push_neg at h
+      exact h
+
+lemma interection_comm (I J : MyInterval) :
+  intersection I J = intersection J I := by
+    ext
+    · rw [intersection, intersection]
+      simp
+      rw [disjoint_symm, max_comm]
+    · rw [intersection, intersection]
+      simp
+      rw [disjoint_symm, min_comm]
+
 
 end MyInterval
