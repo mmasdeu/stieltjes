@@ -8,6 +8,19 @@ set_option autoImplicit false
 open scoped Classical
 noncomputable section
 
+
+set_option autoImplicit false
+
+/-
+Idea abandonada: una definició inductiva de partició, per il·lustrar com es faria
+-/
+inductive MyPart_ : ℝ → ℝ → Type
+| nil {x y : ℝ} (h : x ≤ y) : MyPart_ x y
+| ins_left {x y z: ℝ} (h : z ≤ x) : MyPart_ x y → MyPart_ z y
+
+
+
+
 @[ext]
 structure Prepartition (I : MyInterval) where
   intervals : Finset MyInterval
