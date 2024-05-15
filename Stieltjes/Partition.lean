@@ -1,4 +1,4 @@
-import Stieltjes.MyInterval
+ import Stieltjes.MyInterval
 
 
 open Real Topology Interval NonemptyInterval BigOperators Fintype
@@ -31,8 +31,12 @@ namespace Prepartition
 
 variable {I : MyInterval}
 
-instance : Membership MyInterval (Prepartition I):=
+instance mem_interval : Membership MyInterval (Prepartition I):=
   ⟨fun J P ↦ J ∈ P.intervals⟩
+
+@[simp]
+theorem mem_interval_def {P : Prepartition I} {J : MyInterval} :
+  J ∈ P ↔ J ∈ P.intervals := by rfl
 
 theorem injective_intervals : Function.Injective (intervals : Prepartition I → Finset (MyInterval)) := by
   rintro ⟨s₁, h₁, h₁'⟩ ⟨s₂, h₂, h₂'⟩ (rfl : s₁ = s₂)
@@ -119,6 +123,14 @@ A Prepartition of an interval I is a Partition if it covers all of I
 -/
 def isPartition (P : Prepartition I) : Prop :=
   ∀ x ∈ I, ∃ J ∈ P, x ∈ J
+
+theorem single_isPartition (I : MyInterval) :
+  isPartition (single I I (by rfl)) := by
+  intro x hx
+  use I
+  constructor
+  · simp
+  · exact hx
 
 theorem isPartition_nonempty (P : Prepartition I) (h : P.isPartition):
     ∃ J: MyInterval, J ∈ P := by

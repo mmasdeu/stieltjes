@@ -1,6 +1,11 @@
 import Stieltjes.Partition
+import Mathlib.Order.Filter.Bases
+import Mathlib.Topology.Defs.Filter
+
 
 open Real Topology Interval NonemptyInterval BigOperators Fintype Prepartition Finset
+open Prepartition
+open scoped Topology
 set_option autoImplicit false
 
 open scoped Classical
@@ -49,3 +54,40 @@ theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : Tagging I) (h : P.isPart
 
 theorem Darboux_const' (c : ℝ) (f : ℝ → ℝ) (P : Tagging I) (h : P.isPartition) :
   Darboux f (λ _ : ℝ ↦ c) P = 0 := by sorry
+
+/- Definition of integral via filters
+-/
+def refinements (P : Prepartition I) : Set (Tagging I):=
+  { Q |  (toPrepartition Q) ≤ P}
+
+theorem contain' (P Q : Prepartition I) :
+  Q ≤ P → refinements P ⊆ refinements Q := sorry
+
+def UnivFilterBasis (I : MyInterval) : FilterBasis (Tagging I) where
+  sets := refinements '' {P : Prepartition I | P.isPartition }
+  nonempty := by
+    refine Set.Nonempty.image refinements ?_
+    use Prepartition.single I I (by rfl)
+    exact single_isPartition I
+  inter_sets := by
+    intro X Y hX hY
+    obtain ⟨P, hP, hPaux⟩ := hX
+    obtain ⟨Q, hQ, hQaux⟩ := hY
+    subst hPaux hQaux
+    simp at hP hQ ⊢
+    sorry
+
+def UnivFilter (I : MyInterval) : Filter (Tagging I) := (UnivFilterBasis I).filter
+
+def has_integral (f α : ℝ → ℝ) (I : MyInterval) (x : ℝ) :=
+  Filter.Tendsto (Darboux f α) (UnivFilter I) (𝓝 x)
+
+def integrable (f α : ℝ → ℝ) (I : MyInterval)
+  := ∃ x, has_integral f α I x
+
+noncomputable def integral (f α : ℝ → ℝ) (I : MyInterval) : ℝ :=
+  lim (Filter.map (Darboux f α) (UnivFilter I))
+
+/- theorem integrable_of_continous (f α : ℝ → ℝ) (I : MyInterval)
+  (h : f.continuous_on I) (h' :  α.continuous_on I) : integrable f α I := sorry
+ -/
