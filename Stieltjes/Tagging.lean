@@ -39,6 +39,7 @@ lemma telescope {X Y : Finset ℝ} {f : ℝ → ℝ} :
   · linarith [this]
   simp [←sum_union disjoint_sdiff, add_comm, union_comm]
 
+@[simp]
 theorem Darboux_const (c : ℝ) (α : ℝ → ℝ) (P : Tagging I) (h : P.isPartition) :
   Darboux (λ _ : ℝ ↦ c) α P = c * (α I.upper - α I.lower) := by
   unfold Darboux
@@ -88,6 +89,8 @@ def integrable (f α : ℝ → ℝ) (I : MyInterval)
 noncomputable def integral (f α : ℝ → ℝ) (I : MyInterval) : ℝ :=
   lim (Filter.map (Darboux f α) (UnivFilter I))
 
-/- theorem integrable_of_continous (f α : ℝ → ℝ) (I : MyInterval)
-  (h : f.continuous_on I) (h' :  α.continuous_on I) : integrable f α I := sorry
- -/
+theorem integral_const (α : ℝ → ℝ) (I : MyInterval) (c : ℝ)
+  : integral (λ _ ↦ c) α I = c * (α I.upper - α I.lower) := sorry
+
+theorem integrable_of_continous (f α : ℝ → ℝ) (I : MyInterval)
+  (h : ContinuousOn f I) : integrable f α I := sorry
