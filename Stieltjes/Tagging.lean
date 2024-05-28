@@ -62,7 +62,8 @@ def refinements (P : Prepartition I) : Set (Tagging I):=
   { Q |  (toPrepartition Q) ≤ P}
 
 theorem contain' (P Q : Prepartition I) :
-  Q ≤ P → refinements P ⊆ refinements Q := sorry
+  P ≤ Q → refinements P ⊆ refinements Q := sorry
+
 
 def UnivFilterBasis (I : MyInterval) : FilterBasis (Tagging I) where
   sets := refinements '' {P : Prepartition I | P.isPartition }
@@ -76,6 +77,16 @@ def UnivFilterBasis (I : MyInterval) : FilterBasis (Tagging I) where
     obtain ⟨Q, hQ, hQaux⟩ := hY
     subst hPaux hQaux
     simp at hP hQ ⊢
+    use P ⊓ Q
+    constructor
+    · sorry
+    · constructor
+      · apply contain'
+        
+        sorry
+      · apply contain'
+        sorry
+
     sorry
 
 def UnivFilter (I : MyInterval) : Filter (Tagging I) := (UnivFilterBasis I).filter
@@ -93,4 +104,13 @@ theorem integral_const (α : ℝ → ℝ) (I : MyInterval) (c : ℝ)
   : integral (λ _ ↦ c) α I = c * (α I.upper - α I.lower) := sorry
 
 theorem integrable_of_continous (f α : ℝ → ℝ) (I : MyInterval)
-  (h : ContinuousOn f I) : integrable f α I := sorry
+  (h : ContinuousOn f I) (hα : MonotoneOn α I): integrable f α I := sorry
+
+theorem darboux_approximates (f α : ℝ → ℝ) (I : MyInterval)
+  (h : ContinuousOn f I.Closure) (hα : MonotoneOn α I) :
+  ∀ ε, 0 < ε → ∃ δ, 0 < δ ∧ ∀ P : Tagging I, (hP : P.isPartition)
+  → P.Mesh hP < δ → |Darboux f α P - integral f α I| < ε := by
+  have h' : UniformContinuousOn f I.Closure :=
+    IsCompact.uniformContinuousOn_of_continuous isCompact_Icc h
+  sorry
+  done

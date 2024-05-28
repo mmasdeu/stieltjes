@@ -1,7 +1,7 @@
  import Stieltjes.MyInterval
 
 
-open Real Topology Interval NonemptyInterval BigOperators Fintype
+open Real Topology MyInterval NonemptyInterval BigOperators Fintype
 
 set_option autoImplicit false
 
@@ -10,16 +10,6 @@ noncomputable section
 
 
 set_option autoImplicit false
-
-/-
-Idea abandonada: una definició inductiva de partició, per il·lustrar com es faria
--/
-inductive MyPart_ : ℝ → ℝ → Type
-| nil {x y : ℝ} (h : x ≤ y) : MyPart_ x y
-| ins_left {x y z: ℝ} (h : z ≤ x) : MyPart_ x y → MyPart_ z y
-
-
-
 
 @[ext]
 structure Prepartition (I : MyInterval) where
@@ -132,11 +122,25 @@ theorem single_isPartition (I : MyInterval) :
   · simp
   · exact hx
 
-theorem isPartition_nonempty (P : Prepartition I) (h : P.isPartition):
+theorem isPartition_nonempty' (P : Prepartition I) (h : P.isPartition):
     ∃ J: MyInterval, J ∈ P := by
   let ⟨J, hJ1, _⟩ := h I.upper (MyInterval.upper_mem I)
   use J
 
+theorem isPartition_nonempty (P : Prepartition I) (h : P.isPartition):
+    P.intervals.Nonempty := isPartition_nonempty' P h
+
+
+def Mesh (P : Prepartition I) (h : isPartition P) : ℝ
+  := Finset.max' (Finset.image MyInterval.length P.intervals) (by
+    simp [isPartition_nonempty P h])
+
+def Mesh' (P : Prepartition I) : WithBot ℝ
+  := Finset.max (Finset.image MyInterval.length P.intervals)
+
+/--
+
+-/
 instance : LE (Prepartition I) :=
   ⟨fun P P' => ∀ ⦃I⦄, I ∈ P → ∃ I' ∈ P', I ≤ I'⟩
 
@@ -168,20 +172,28 @@ instance partialOrder : PartialOrder (Prepartition I) where
     ext I
     exact ⟨eq_antisym' hab hba _,eq_antisym' hba hab _⟩
 
-instance : OrderTop (Prepartition I) where
-  top := single I I (by tauto)
-  le_top := by
+instance : SemilatticeInf (Prepartition I) where
+  inf := sorry
+  le := (· ≤ ·)
+  le_refl := by
     intro P
-    intro J hJ
+    intro I hI
     use I
-    constructor
-    · exact Finset.singleton_subset_iff.mp fun ⦃I⦄ I => I
-    · exact P.le_of_mem' J hJ
+  le_trans := by
+    intro a b c hab hbc
+    intro J hJ
+    obtain ⟨I', hI1,hI2⟩ := hab hJ
+    obtain ⟨J', hJ1,hJ2⟩ := hbc hI1
+    use J'
+    exact ⟨hJ1, fun a => hJ2 (hI2 a) ⟩
+  le_antisymm := by
+    intro a b hab hba
+    ext I
+    exact ⟨eq_antisym' hab hba _,eq_antisym' hba hab _⟩
+  inf_le_left := sorry
+  inf_le_right := sorry
+  le_inf := sorry
 
-instance Inf : Inf (Prepartition I) where
-  inf := by
-    intro P Q
-    sorry -- To do, this amounts to finding a common refinement of two partitions.
 
 theorem lower_in {P : Prepartition I} {J: MyInterval} (h: J ∈ P)
   (hN: I.lower < J.lower) :  J.lower ∈ I  := by
@@ -189,14 +201,14 @@ theorem lower_in {P : Prepartition I} {J: MyInterval} (h: J ∈ P)
   rw [MyInterval.mem_def]
   exact ⟨hN, le_of_lt aux⟩
 
-#check WithBot MyInterval
 def upperset (P : Prepartition I): Finset ℝ  :=
   Finset.image (λ J ↦ J.upper) P.intervals
 
-theorem upperset_nonempty (P : Prepartition I)(h : P.isPartition): (upperset P).Nonempty:= by
+theorem upperset_nonempty (P : Prepartition I)
+  (h : P.isPartition): (upperset P).Nonempty:= by
   rw [upperset]
   simp
-  let ⟨J,hJ⟩ := isPartition_nonempty P h
+  let ⟨J,hJ⟩ := isPartition_nonempty' P h
   use J
   exact hJ
 
@@ -219,7 +231,7 @@ def lowerset (P : Prepartition I): Finset ℝ  :=
 theorem lowerset_nonempty (P : Prepartition I)(h : P.isPartition): (lowerset P).Nonempty:= by
   rw [lowerset]
   simp
-  let ⟨J,hJ⟩ := isPartition_nonempty P h
+  let ⟨J,hJ⟩ := isPartition_nonempty' P h
   use J
   exact hJ
 

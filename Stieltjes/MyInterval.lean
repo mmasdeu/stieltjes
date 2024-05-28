@@ -22,6 +22,12 @@ instance : Inhabited (MyInterval) := ⟨⟨0, 1, zero_lt_one⟩⟩
 instance : Membership ℝ (MyInterval) :=
 ⟨fun x I ↦ x ∈ Set.Ioc I.lower I.upper⟩
 
+def length (I : MyInterval) := I.upper - I.lower
+
+lemma length_pos (I : MyInterval) : 0 < I.length := by
+  unfold length
+  linarith [I.lower_lt_upper]
+
 theorem mem_def (I : MyInterval) (x : ℝ) : x ∈ I ↔ x ∈ Set.Ioc I.lower I.upper := by rfl
 
 theorem upper_mem (I : MyInterval) : I.upper ∈ I := by
